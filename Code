@@ -1,0 +1,83 @@
+// include necessary libraries
+#include <Wire.h> // for I2C communication with MPU 6500 and BMP280
+#include <SPI.h> // for communication with NRF24L01
+#include <Adafruit_BMP280.h> // for reading data from BMP280
+#include <Adafruit_Sensor.h> // for reading data from MPU 6500
+#include <Adafruit_MPU6050.h> // for reading data from MPU 6500
+#include <TinyGPS++.h> // for reading data from Neo M8N
+
+// define pin assignments for NRF24L01
+#define CE_PIN 10
+#define CSN_PIN 9
+
+// define objects for sensors
+Adafruit_BMP280 bmp; // for BMP280
+Adafruit_MPU6050 mpu; // for MPU 6500
+TinyGPSPlus gps; // for Neo M8N
+
+// define variables for sensor data
+float ax, ay, az; // accelerometer data from MPU 6500
+float gx, gy, gz; // gyroscope data from MPU 6500
+float temperature; // temperature data from MPU 6500
+float altitude; // altitude data from BMP280
+float latitude, longitude; // latitude and longitude data from Neo M8N
+
+// setup function
+void setup() {
+  // initialize serial communication
+  Serial.begin(115200);
+
+  // initialize I2C communication with MPU 6500 and BMP280
+  Wire.begin();
+
+  // initialize BMP280
+  if (!bmp.begin()) {
+    Serial.println("Could not find a valid BMP280 sensor, check wiring!");
+    while (1);
+  }
+
+  // initialize MPU 6500
+  if (!mpu.begin()) {
+    Serial.println("Could not find a valid MPU6050 sensor, check wiring!");
+    while (1);
+  }
+
+  // initialize NRF24L01
+  radio.begin();
+  radio.setPALevel(RF24_PA_MAX);
+  radio.setDataRate(RF24_250KBPS);
+  radio.openWritingPipe(address);
+  radio.stopListening();
+}
+
+// main loop function
+void loop() {
+  // read sensor data
+  sensors_event_t accel, gyro, temp;
+  mpu.getEvent(&accel, &gyro, &temp);
+  ax = accel.acceleration.x;
+  ay = accel.acceleration.y;
+  az = accel.acceleration.z;
+  gx = gyro.gyro.x;
+  gy = gyro.gyro.y;
+  gz = gyro.gyro.z;
+  temperature = temp.temperature;
+  altitude = bmp.readAltitude();
+
+  // read GPS data
+  while (Serial1.available() > 0) {
+    if (gps.encode(Serial1.read())) {
+      latitude = gps.location.lat();
+      longitude = gps.location.lng();
+    }
+  }
+
+  // perform flight control calculations
+  // insert code here
+
+  // send data over NRF24L01
+  // insert code here
+
+  // delay for a short period of time
+  delay(10);
+}
